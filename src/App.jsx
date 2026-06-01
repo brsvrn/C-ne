@@ -566,19 +566,47 @@ Kullanıcının izlediği filmler/diziler: ${watched}
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Sunucu hatası" }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        throw new Error(`HTTP ${res.status}`);
       }
 
-      const data = await res.json();
-      const replyText = data.text || "Yanıt alınamadı.";
-      const movieTitles = extractMovieTitles(replyText);
+      setMsgs(m => [...m, { role: "assistant", content: "" }]);
 
-      setMsgs(m => [...m, {
-        role: "assistant",
-        content: replyText,
-        movieTitles: movieTitles.length > 0 ? movieTitles : undefined,
-      }]);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n").filter(line => line.trim().startsWith("data: "));
+
+        for (const line of lines) {
+          const dataStr = line.replace("data: ", "").trim();
+          if (dataStr === "[DONE]") continue;
+
+          try {
+            const parsed = JSON.parse(dataStr);
+            const textPart = parsed.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            fullText += textPart;
+
+            setMsgs(m => {
+              const newMsgs = [...m];
+              const lastMsg = newMsgs[newMsgs.length - 1];
+              lastMsg.content = fullText;
+              
+              const extracted = extractMovieTitles(fullText);
+              if (extracted.length > 0) {
+                 lastMsg.movieTitles = extracted;
+              }
+              return newMsgs;
+            });
+          } catch (e) {
+            // Sessizce geç
+          }
+        }
+      }
     } catch (err) {
       setMsgs(m => [...m, { role: "assistant", content: `⚠️ Hata: ${err.message}` }]);
     }
