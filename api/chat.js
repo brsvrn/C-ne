@@ -1,45 +1,43 @@
-export default async function handler(req, res) {
-  // CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+export const config = {
+  runtime: 'edge',
+};
+
+export default async function handler(req) {
+  // CORS Yönetimi
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
   }
 
-  const { messages, systemPrompt } = req.body;
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
+  }
+
+  const { messages, systemPrompt } = await req.json();
   const GEMINI_KEY = process.env.GEMINI_API_KEY;
 
-  // Validation
-  if (!GEMINI_KEY) {
-    return res.status(500).json({ 
-      error: 'GEMINI_API_KEY environment variable not set' 
-    });
-  }
-
-  if (!messages || !Array.isArray(messages)) {
-    return res.status(400).json({ 
-      error: 'Missing or invalid messages field' 
-    });
-  }
-
-  if (!systemPrompt || typeof systemPrompt !== 'string') {
-    return res.status(400).json({ 
-      error: 'Missing or invalid systemPrompt field' 
-    });
-  }
-
   try {
+    // URL'deki 'streamGenerateContent?alt=sse' kısmına dikkat, streaming'i başlatan yer burası.
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${GEMINI_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: messages,
           systemInstruction: { parts: [{ text: systemPrompt }] },
+          // Yarım kesilmeleri önleyen güvenlik filtresi ayarları:
+          safetySettings: [
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+          ],
           generationConfig: {
             maxOutputTokens: 2048,
             temperature: 0.8,
@@ -49,28 +47,20 @@ export default async function handler(req, res) {
     );
 
     if (!response.ok) {
-      const err = await response.text();
-      console.error('Gemini API Error:', response.status, err);
-      return res.status(response.status).json({ 
-        error: `API error: ${response.status}` 
-      });
+      return new Response(JSON.stringify({ error: `API error: ${response.status}` }), { status: response.status });
     }
 
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
-    if (!text) {
-      console.warn('Empty response from Gemini API');
-      return res.status(500).json({ 
-        error: 'No response text generated' 
-      });
-    }
-
-    return res.status(200).json({ text });
+    // Gemini'den gelen akışı (stream) doğrudan frontend'e yönlendiriyoruz
+    return new Response(response.body, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
   } catch (err) {
     console.error('Chat API Error:', err.message);
-    return res.status(500).json({ 
-      error: 'Internal server error' 
-    });
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500 });
   }
 }
