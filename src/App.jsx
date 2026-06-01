@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { C } from "./utils/theme";
 import { LS } from "./utils/storage";
 
@@ -25,68 +25,14 @@ const GLOBAL_CSS = `
 export default function App() {
   const [tab, setTab] = useState("home");
   const [modal, setModal] = useState(null);
-  const [showChat, setShowChat] = useState(false);
   const [history, setHistory] = useState(() => LS.get("cineai_history", []));
   const [watchlist, setWatchlist] = useState(() => LS.get("cineai_watchlist", []));
 
   useEffect(() => { LS.set("cineai_history", history); }, [history]);
   useEffect(() => { LS.set("cineai_watchlist", watchlist); }, [watchlist]);
 
-  const watchedIds = new Set(history.map(x => x.id));
-  const watchlistIds = new Set(watchlist.map(x => x.id));
-
-  const [chatMessages, setChatMessages] = useState([
-    { role: "assistant", content: "Merhaba! Bugün ne izlemek istersin?" }
-  ]);
-  const [chatInput, setChatInput] = useState("");
-  const [isChatLoading, setIsChatLoading] = useState(false);
-  const chatScrollRef = useRef(null);
-
-  const handleChatSubmit = async (e) => {
-    e.preventDefault();
-    if (!chatInput.trim() || isChatLoading) return;
-
-    const userMsg = chatInput;
-    setChatInput("");
-    const newMessages = [...chatMessages, { role: "user", content: userMsg }];
-    setChatMessages(newMessages);
-    setIsChatLoading(true);
-
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: newMessages.map(m => ({
-            role: m.role === "assistant" ? "model" : "user",
-            parts: [{ text: m.content }]
-          })),
-          systemPrompt: "Sen CineAI'sın, kısa ve emoji ile cevap ver."
-        }),
-      });
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let botResponse = "";
-      setChatMessages(prev => [...prev, { role: "assistant", content: "" }]);
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value);
-        botResponse += chunk;
-        setChatMessages(prev => {
-          const arr = [...prev];
-          arr[arr.length - 1].content = botResponse;
-          return arr;
-        });
-      }
-    } catch (error) {
-      setChatMessages(prev => [...prev, { role: "assistant", content: "Bir hata oluştu." }]);
-    } finally {
-      setIsChatLoading(false);
-    }
-  };
+  const watchedIds = new Set(history.map(item => item.id));
+  const watchlistIds = new Set(watchlist.map(item => item.id));
 
   return (
     <>
@@ -100,20 +46,19 @@ export default function App() {
         {tab === "search" && <SearchScreen onCard={setModal} watchedIds={watchedIds} />}
         {tab === "library" && <LibraryScreen history={history} watchlist={watchlist} onCard={setModal} />}
         
-        <BottomNav tab={tab} setTab={setTab} onChat={() => setShowChat(true)} />
+        <BottomNav tab={tab} setTab={setTab} />
       </div>
 
       {modal && (
         <DetailModal
           item={modal}
           onClose={() => setModal(null)}
-          onWatch={(item) => setHistory(prev => [{...item}, ...prev])}
-          onWatchlist={(item) => setWatchlist(prev => [{...item}, ...prev])}
+          onWatch={(item) => setHistory(prev => [item, ...prev])}
+          onWatchlist={(item) => setWatchlist(prev => [item, ...prev])}
           watched={watchedIds.has(modal.id)}
           inWatchlist={watchlistIds.has(modal.id)}
         />
       )}
     </>
   );
-// fix
 }
