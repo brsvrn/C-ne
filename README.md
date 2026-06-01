@@ -1,99 +1,104 @@
-# CineAI 🎬
+# 🎬 CineAI — Kişisel Film & Dizi Asistanı
 
-Bir film ve dizi önerme uygulaması. TMDB API'sı ile film verilerini ve Gemini AI ile akıllı sohbet özelliklerini kullanıyor.
+Netflix + Letterboxd + AI sohbet asistanı kombinasyonu. Tamamen kişisel, hesap gerektirmez.
 
-## Gereklilikler
+---
 
-- Node.js 16+
-- React 18+
-- TMDB API Anahtarı
-- Google Gemini API Anahtarı
+## 🚀 Vercel'e Deploy Etme (Adım Adım)
 
-## Kurulum
+### 1. GitHub'a Yükle
 
-### 1. Depoyu Klonlayın
 ```bash
-git clone https://github.com/brsvrn/C-ne.git
-cd C-ne
+git init
+git add .
+git commit -m "CineAI ilk sürüm"
+git branch -M main
+git remote add origin https://github.com/KULLANICI_ADI/cineai.git
+git push -u origin main
 ```
 
-### 2. Bağımlılıkları Yükleyin
+### 2. Vercel'e Bağla
+
+1. [vercel.com](https://vercel.com) → "New Project"
+2. GitHub reposunu seç → "Import"
+3. **Framework Preset:** Vite
+4. **Build Command:** `npm run build`
+5. **Output Directory:** `dist`
+
+### 3. Environment Variables Ekle (ÖNEMLİ!)
+
+Vercel dashboard → Project Settings → **Environment Variables**
+
+| Key | Value | Ne İçin |
+|-----|-------|---------|
+| `GEMINI_API_KEY` | `AIza...` | AI sohbet asistanı |
+| `VITE_TMDB_KEY` | `abc123...` | Film veritabanı (opsiyonel) |
+
+**GEMINI_API_KEY nereden alınır?**
+→ https://aistudio.google.com/app/apikey (ücretsiz)
+
+**VITE_TMDB_KEY nereden alınır?**
+→ https://www.themoviedb.org/settings/api (ücretsiz)
+
+### 4. Redeploy
+
+Environment variable ekledikten sonra:
+Vercel → Deployments → "Redeploy"
+
+---
+
+## 💻 Lokal Çalıştırma
+
 ```bash
 npm install
 ```
 
-### 3. API Anahtarlarını Ayarlayın
+`.env.local` dosyası oluştur:
+```
+GEMINI_API_KEY=senin_anahtarin
+VITE_TMDB_KEY=senin_tmdb_anahtarin
+```
 
-**`.env` dosyası oluşturun:**
 ```bash
-cp .env.example .env
+npm run dev
 ```
 
-**`.env` dosyasını düzenleyin:**
+---
+
+## 📱 PWA Olarak Telefona Ekle
+
+Deploy ettikten sonra telefondan siteye gir:
+- **Android Chrome:** Menü → "Ana ekrana ekle"
+- **iOS Safari:** Paylaş → "Ana Ekrana Ekle"
+
+Artık uygulama gibi açılır, tam ekran çalışır!
+
+---
+
+## 🏗️ Proje Yapısı
+
 ```
-REACT_APP_TMDB_KEY=your_tmdb_api_key_here
-REACT_APP_GEMINI_KEY=your_gemini_api_key_here
+cineai/
+├── api/
+│   └── chat.js          # Vercel serverless — Gemini API proxy
+├── public/
+│   └── manifest.json    # PWA manifest
+├── src/
+│   ├── main.jsx         # React giriş noktası
+│   └── App.jsx          # Tüm uygulama (tek dosya)
+├── index.html
+├── vite.config.js
+├── vercel.json
+└── package.json
 ```
 
-#### API Anahtarlarını Alın:
+---
 
-**TMDB API Anahtarı:**
-1. https://www.themoviedb.org/settings/api adresine gidin
-2. Ücretsiz API anahtarı için kaydolun
-3. API anahtarınızı `.env` dosyasına yapıştırın
+## ✅ Özellikler
 
-**Google Gemini API Anahtarı:**
-1. https://aistudio.google.com/apikey adresine gidin
-2. "Create API Key" butonuna tıklayın
-3. Anahtarı kopyalayıp `.env` dosyasına yapıştırın
-
-### 4. Uygulamayı Başlatın
-```bash
-npm start
-```
-
-Tarayıcı otomatik olarak `http://localhost:3000` adresinde açılacak.
-
-## Özellikler
-
-✨ **Trending Film & Diziler** - Haftanın en popüler içerikleri
-🔍 **Arama** - Film, dizi ve oyuncuları ara
-📚 **Kütüphane** - İzlediğin ve izleme listeni yönet
-🤖 **CineAI Asistan** - Yapay zeka destekli film önerileri
-⭐ **Detaylı Bilgiler** - Oyuncular, yönetmenler, fragmanlar
-
-## Teknoloji Stack
-
-- **Frontend:** React + Hooks
-- **API:** TMDB (The Movie Database)
-- **AI:** Google Gemini 2.5 Flash
-- **Storage:** Browser LocalStorage
-- **Styling:** Inline CSS + CSS Grid/Flexbox
-
-## Güvenlik
-
-⚠️ **Önemli:** API anahtarlarınızı asla commit etmeyin!
-
-- `.env` dosyası `.gitignore`'a ekli
-- `REACT_APP_` prefix'li env variables kullanılıyor
-- Production'da backend proxy kullanmayı düşünün
-
-## Hata Giderme
-
-### 404 Hatası Alıyorum
-- TMDB API anahtarınızı kontrol edin
-- API anahtarınızın geçerliliğini TMDB dashboard'da doğrulayın
-- `.env` dosyasının proje kökünde olduğundan emin olun
-
-### Gemini API Hataları
-- API anahtarınızın geçerli olduğunu kontrol edin
-- Google Cloud Console'da API'nin enable edildiğini doğrulayın
-- Rate limiting'i kontrol edin (dakikada 60 request limiti)
-
-## Lisans
-
-MIT
-
-## İletişim
-
-Sorularınız için GitHub issues açabilirsiniz.
+- 🏠 **Ana Sayfa** — TMDB'den canlı trendler, yeni filmler, diziler
+- 🔍 **Arama** — Gerçek zamanlı film/dizi/oyuncu arama
+- 🎬 **Detay Sayfası** — Poster, fragman, oyuncular, benzer içerikler
+- 📚 **Kütüphane** — İzlenenler + izleme listesi (localStorage)
+- 🤖 **AI Asistan** — Gemini ile Türkçe film öneri sohbeti
+- 📱 **PWA** — Telefona uygulama gibi kurulabilir
