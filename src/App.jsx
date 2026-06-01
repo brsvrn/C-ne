@@ -2,104 +2,23 @@ import React, { useState, useEffect, useRef } from "react";
 import { C } from "./utils/theme";
 import { LS } from "./utils/storage";
 
-// Bileşenlerimiz
 import HomeScreen from "./components/HomeScreen";
 import SearchScreen from "./components/SearchScreen";
 import LibraryScreen from "./components/LibraryScreen";
 import BottomNav from "./components/BottomNav";
 import DetailModal from "./components/DetailModal";
 
-const FONT_LINK =
-  "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap";
+const FONT_LINK = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap";
 
 const GLOBAL_CSS = `
   @import url('${FONT_LINK}');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html, body, #root { height: 100%; }
-  body {
-    background: ${C.bg};
-    color: ${C.text};
-    font-family: 'DM Sans', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-  }
+  body { background: ${C.bg}; color: ${C.text}; font-family: 'DM Sans', sans-serif; overflow-x: hidden; }
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: ${C.border}; border-radius: 2px; }
-  input, textarea, button { font-family: inherit; }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(18px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
-  }
-  @keyframes shimmer {
-    0%   { background-position: -400px 0; }
-    100% { background-position:  400px 0; }
-  }
-
-  .fade-up { animation: fadeUp 0.45s cubic-bezier(.22,1,.36,1) both; }
-
-  .shimmer-bg {
-    background: linear-gradient(90deg, ${C.card} 25%, ${C.border} 50%, ${C.card} 75%);
-    background-size: 400px 100%;
-    animation: shimmer 1.4s infinite;
-  }
-  .glass {
-    background: rgba(14,14,26,0.82);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border: 1px solid ${C.border};
-  }
-  .btn-accent {
-    background: ${C.accent};
-    color: #0a0806;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 20px;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .btn-accent:hover { filter: brightness(1.12); transform: translateY(-1px); }
-  .btn-ghost {
-    background: transparent;
-    color: ${C.muted};
-    border: 1px solid ${C.border};
-    border-radius: 8px;
-    padding: 10px 20px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .btn-ghost:hover { border-color: ${C.accent}; color: ${C.accent}; }
-  .tag {
-    display: inline-block;
-    background: ${C.accentDim};
-    color: ${C.accent};
-    border: 1px solid #e8b86d44;
-    border-radius: 4px;
-    padding: 2px 8px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-  .dot-sep { color: ${C.muted}; margin: 0 6px; }
-
-  /* Hide scrollbar on shelves but keep scrollable */
-  .shelf-scroll {
-    display: flex;
-    gap: 12px;
-    overflow-x: auto;
-    padding-bottom: 8px;
-    scroll-snap-type: x mandatory;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+  .shelf-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x mandatory; scrollbar-width: none; }
   .shelf-scroll::-webkit-scrollbar { display: none; }
 `;
 
@@ -107,7 +26,6 @@ export default function App() {
   const [tab, setTab] = useState("home");
   const [modal, setModal] = useState(null);
   const [showChat, setShowChat] = useState(false);
-
   const [history, setHistory] = useState(() => LS.get("cineai_history", []));
   const [watchlist, setWatchlist] = useState(() => LS.get("cineai_watchlist", []));
 
@@ -117,35 +35,12 @@ export default function App() {
   const watchedIds = new Set(history.map(x => x.id));
   const watchlistIds = new Set(watchlist.map(x => x.id));
 
-  const markWatched = (item) => {
-    if (watchedIds.has(item.id)) {
-      setHistory(prev => prev.filter(x => x.id !== item.id));
-    } else {
-      setHistory(prev => [{ ...item, addedAt: Date.now() }, ...prev]);
-    }
-  };
-
-  const toggleWatchlist = (item) => {
-    if (watchlistIds.has(item.id)) {
-      setWatchlist(prev => prev.filter(x => x.id !== item.id));
-    } else {
-      setWatchlist(prev => [{ ...item, addedAt: Date.now() }, ...prev]);
-    }
-  };
-
-  // Chat States
   const [chatMessages, setChatMessages] = useState([
-    { role: "assistant", content: "Merhaba! Bugün ne izlemek istersin? Dizi mi, film mi arıyorsun?" }
+    { role: "assistant", content: "Merhaba! Bugün ne izlemek istersin?" }
   ]);
   const [chatInput, setChatInput] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatScrollRef = useRef(null);
-
-  useEffect(() => {
-    if (chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
-    }
-  }, [chatMessages, isChatLoading]);
 
   const handleChatSubmit = async (e) => {
     e.preventDefault();
@@ -153,4 +48,71 @@ export default function App() {
 
     const userMsg = chatInput;
     setChatInput("");
-    const newMessages = [...chatMessages, { role: "
+    const newMessages = [...chatMessages, { role: "user", content: userMsg }];
+    setChatMessages(newMessages);
+    setIsChatLoading(true);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: newMessages.map(m => ({
+            role: m.role === "assistant" ? "model" : "user",
+            parts: [{ text: m.content }]
+          })),
+          systemPrompt: "Sen CineAI'sın, kısa ve emoji ile cevap ver."
+        }),
+      });
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let botResponse = "";
+      setChatMessages(prev => [...prev, { role: "assistant", content: "" }]);
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        botResponse += chunk;
+        setChatMessages(prev => {
+          const arr = [...prev];
+          arr[arr.length - 1].content = botResponse;
+          return arr;
+        });
+      }
+    } catch (error) {
+      setChatMessages(prev => [...prev, { role: "assistant", content: "Bir hata oluştu." }]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <style>{GLOBAL_CSS}</style>
+      <div style={{ maxWidth: 520, margin: "0 auto", background: C.bg, minHeight: "100vh" }}>
+        <div style={{ padding: "20px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between" }}>
+          <div style={{ fontSize: 22, fontWeight: 700 }}><span style={{ color: C.accent }}>Cine</span>AI</div>
+        </div>
+        
+        {tab === "home" && <HomeScreen onCard={setModal} watchedIds={watchedIds} />}
+        {tab === "search" && <SearchScreen onCard={setModal} watchedIds={watchedIds} />}
+        {tab === "library" && <LibraryScreen history={history} watchlist={watchlist} onCard={setModal} />}
+        
+        <BottomNav tab={tab} setTab={setTab} onChat={() => setShowChat(true)} />
+      </div>
+
+      {modal && (
+        <DetailModal
+          item={modal}
+          onClose={() => setModal(null)}
+          onWatch={(item) => setHistory(prev => [{...item}, ...prev])}
+          onWatchlist={(item) => setWatchlist(prev => [{...item}, ...prev])}
+          watched={watchedIds.has(modal.id)}
+          inWatchlist={watchlistIds.has(modal.id)}
+        />
+      )}
+    </>
+  );
+}
