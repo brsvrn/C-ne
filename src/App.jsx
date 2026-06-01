@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 const C = {
   bg:        "#080810",
@@ -119,7 +119,7 @@ const GLOBAL_CSS = `
   .chat-movie-card:active { transform: scale(0.97); }
 `;
 
-// ── TMDB ──────────────────────────────────────────────────────────────────
+// ── TMDB ─────────────────────────────────────────────────────────────────
 const TMDB_KEY = import.meta.env.VITE_TMDB_KEY || "3fd2be6f0c70a2a598f084ddfb75487c";
 const TMDB_BASE = "https://api.themoviedb.org/3";
 const IMG = (p, s = "w500") => p ? `https://image.tmdb.org/t/p/${s}${p}` : null;
@@ -160,7 +160,7 @@ function SkeletonCard() {
   );
 }
 
-// ── MovieCard ─────────────────────────────────────────────────────────────
+// ── MovieCard ────────────────────────────────────────────────────────────
 function MovieCard({ item, onClick, size = "md", watched = false }) {
   const [hov, setHov] = useState(false);
   const w = size === "sm" ? 110 : size === "lg" ? 170 : 130;
@@ -269,14 +269,14 @@ function DetailModal({ item, onClose, onWatch, onWatchlist, watched, inWatchlist
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "flex-end", justifyContent: "center", backdropFilter: "blur(8px)" }}>
-      <div onClick={e => e.stopPropagation()} className="fade-up" style={{ width: "100%", maxWidth: 520, maxHeight: "92vh", overflowY: "auto", background: C.surface, borderRadius: "20px 20px 0 0", border: `1px solid ${C.border}`, borderBottom: "none" }}>
+      <div onClick={e => e.stopPropagation()} className="fade-up" style={{ width: "100%", maxWidth: 520, maxHeight: "92vh", overflowY: "auto", background: C.surface, borderRadius: "20px 20px 0 0", borderTop: `1px solid ${C.border}` }}>
         <div style={{ position: "relative", height: 220, overflow: "hidden", borderRadius: "20px 20px 0 0" }}>
           {backdropUrl
             ? <img src={backdropUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             : <div style={{ height: "100%", background: `linear-gradient(135deg,${C.card},${C.bg})` }} />
           }
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(14,14,26,1) 0%, rgba(14,14,26,0.15) 55%, transparent 100%)" }} />
-          <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, background: "rgba(0,0,0,0.55)", border: "none", color: C.text, width: 32, height: 32, borderRadius: "50%", cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+          <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, background: "rgba(0,0,0,0.55)", border: "none", color: C.text, width: 32, height: 32, borderRadius: "50%", cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.8)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(0,0,0,0.55)"}>✕</button>
           <div style={{ position: "absolute", bottom: 14, left: 14, right: 14, display: "flex", gap: 12, alignItems: "flex-end" }}>
             {posterUrl && <img src={posterUrl} alt="" style={{ width: 68, height: 102, objectFit: "cover", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.6)", flexShrink: 0 }} />}
             <div style={{ flex: 1 }}>
@@ -301,7 +301,10 @@ function DetailModal({ item, onClose, onWatch, onWatchlist, watched, inWatchlist
           </button>
           {trailer && (
             <a href={`https://youtube.com/watch?v=${trailer.key}`} target="_blank" rel="noreferrer"
-              style={{ padding: "10px 12px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 13, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
+              style={{ padding: "10px 12px", background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 13, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = C.accent}
+              onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
+            >
               ▶ Fragman
             </a>
           )}
@@ -309,7 +312,7 @@ function DetailModal({ item, onClose, onWatch, onWatchlist, watched, inWatchlist
 
         <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, padding: "0 14px" }}>
           {[{ id: "overview", label: "Özet" }, { id: "cast", label: "Oyuncular" }, { id: "similar", label: "Benzerleri" }].map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{ background: "none", border: "none", color: tab === t.id ? C.accent : C.muted, padding: "10px 14px", fontSize: 13, fontWeight: tab === t.id ? 600 : 400, borderBottom: tab === t.id ? `2px solid ${C.accent}` : "2px solid transparent", cursor: "pointer", transition: "color 0.2s" }}>
+            <button key={t.id} onClick={() => setTab(t.id)} style={{ background: "none", border: "none", color: tab === t.id ? C.accent : C.muted, padding: "10px 14px", fontSize: 13, fontWeight: tab === t.id ? 600 : 400, cursor: "pointer", transition: "color 0.2s", borderBottom: tab === t.id ? `2px solid ${C.accent}` : "2px solid transparent", marginBottom: "-1px" }}>
               {t.label}
             </button>
           ))}
@@ -354,7 +357,7 @@ function DetailModal({ item, onClose, onWatch, onWatchlist, watched, inWatchlist
           {tab === "similar" && (
             <div className="shelf-scroll" style={{ animation: "fadeUp 0.3s both" }}>
               {similar.length === 0
-                ? <p style={{ color: C.muted }}>Yükleniyor…</p>
+                ? <p style={{ color: C.muted }}>Benzer içerik bulunamadı.</p>
                 : similar.map(s => <MovieCard key={s.id} item={s} onClick={() => {}} size="sm" />)
               }
             </div>
@@ -427,7 +430,7 @@ function ChatMovieShelf({ titles, onOpenDetail }) {
       })
       .catch(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [titles]);
 
   if (loading) {
     return (
@@ -459,7 +462,6 @@ function ChatMovieShelf({ titles, onOpenDetail }) {
 }
 
 // ── Mesaj içinden film isimlerini parse et ────────────────────────────────
-// AI'dan gelen metinde [[Film Adı]] formatını yakala
 function parseMessageContent(text) {
   const parts = [];
   const regex = /\[\[(.+?)\]\]/g;
@@ -490,16 +492,19 @@ function AIChatPanel({ history, onClose, onOpenDetail }) {
   const [msgs, setMsgs] = useState([
     {
       role: "assistant",
-      content: "Merhaba! Ben CineAI 🎬\n\nSana özel film ve dizi önerileri yapabilirim — izleme geçmişine bakarak, ruh haline göre veya sevdiğin türlere göre. Önerdiğim filmlerin afişlerine dokunarak detay sayfasına geçebilirsin.\n\nNe izlemek istersin?",
+      content: "Merhaba! Ben CineAI 🎬\n\nSana özel film ve dizi önerileri yapabilirim — izleme geçmişine bakarak, ruh haline göre veya sevdiğin türlere göre. Önerdiğim filmlerin afişlerine tıkla, detaylarını gör ve izleme listene ekle!",
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef();
 
-  const watched = history.length > 0
-    ? history.map(h => h.title || h.name).join(", ")
-    : "henüz hiçbir şey izlememiş";
+  const watched = useMemo(() => 
+    history.length > 0
+      ? history.map(h => h.title || h.name).join(", ")
+      : "henüz hiçbir şey izlememiş",
+    [history]
+  );
 
   useEffect(() => {
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
@@ -517,7 +522,7 @@ function AIChatPanel({ history, onClose, onOpenDetail }) {
     setMsgs(m => [...m, { role: "user", content: userMsg }]);
     setLoading(true);
 
-    const systemPrompt = `Sen CineAI'sın — derin sinema kültürüne, geniş film bilgisine ve tutkulu bir eleştirmen bakış açısına sahip kişisel film asistanısın. Kullanıcıyla samimi, hevesli ve akıcı Türkçe konuşuyorsun.
+    const systemPrompt = `Sen CineAI'sın — derin sinema kültürüne, geniş film bilgisine ve tutkulu bir eleştirmen bakış açısına sahip kişisel film asistanısın.
 
 Kullanıcının izlediği filmler/diziler: ${watched}
 
@@ -543,10 +548,7 @@ Kullanıcının izlediği filmler/diziler: ${watched}
    - Kullanıcının zevkini tahmin et
    - Farklı kategorilerden öner (bir klasik, bir yeni, bir gizli cevher gibi)
 
-5. **Asla yarım bırakma** — Cevabın doğal bir şekilde tamamlanmalı.
-
-Örnek iyi cevap formatı:
-"Psikolojik gerilim seviyorsun, o zaman [[Gone Girl]] tam senin için. David Fincher'ın soğuk ve hesaplı yönetim anlayışı burada doruk noktasına ulaşıyor — her sahne seni bir adım daha derin çekiyor. [[Black Mirror]] ise dizi formatında benzer bir his yaratıyor; teknoloji ve insan doğasının karanlık kesişim noktasını işliyor, her bölüm bağımsız bir kâbus gibi."`;
+5. **Asla yarım bırakma** — Cevabın doğal bir şekilde tamamlanmalı.`;
 
     const geminiMsgs = msgs
       .filter((_, i) => i > 0)
@@ -578,7 +580,7 @@ Kullanıcının izlediği filmler/diziler: ${watched}
         movieTitles: movieTitles.length > 0 ? movieTitles : undefined,
       }]);
     } catch (err) {
-      setMsgs(m => [...m, { role: "assistant", content: `Hata: ${err.message}` }]);
+      setMsgs(m => [...m, { role: "assistant", content: `⚠️ Hata: ${err.message}` }]);
     }
     setLoading(false);
   }
@@ -610,8 +612,8 @@ Kullanıcının izlediği filmler/diziler: ${watched}
     <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", background: C.bg }}>
       {/* Header */}
       <div className="glass" style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-        <button onClick={onClose} style={{ background: "none", border: "none", color: C.muted, fontSize: 22, cursor: "pointer", padding: "2px 8px 2px 0" }}>←</button>
-        <div style={{ width: 38, height: 38, borderRadius: "50%", background: `linear-gradient(135deg,${C.accent},${C.red})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19 }}>🎬</div>
+        <button onClick={onClose} style={{ background: "none", border: "none", color: C.muted, fontSize: 22, cursor: "pointer", padding: "2px 8px 2px 0", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = C.accent} onMouseLeave={e => e.currentTarget.style.color = C.muted}>←</button>
+        <div style={{ width: 38, height: 38, borderRadius: "50%", background: `linear-gradient(135deg,${C.accent},${C.red})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🎬</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: 16 }}>CineAI Asistan</div>
           <div style={{ fontSize: 11, color: C.accent }}>● Çevrimiçi · Afişlere dokun → detay</div>
@@ -628,9 +630,7 @@ Kullanıcının izlediği filmler/diziler: ${watched}
         {msgs.map((m, i) => (
           <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start", animation: "fadeUp 0.35s both" }}>
             {m.role === "assistant" && (
-              <div style={{ width: 30, height: 30, borderRadius: "50%", background: `linear-gradient(135deg,${C.accent},${C.red})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, marginRight: 8, marginTop: 2 }}>
-                🎬
-              </div>
+              <div style={{ width: 30, height: 30, borderRadius: "50%", background: `linear-gradient(135deg,${C.accent},${C.red})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, marginRight: 8 }}>🎬</div>
             )}
             <div style={{ maxWidth: "85%" }}>
               <div style={{
@@ -639,6 +639,7 @@ Kullanıcının izlediği filmler/diziler: ${watched}
                 borderRadius: m.role === "user" ? "16px 4px 16px 16px" : "4px 16px 16px 16px",
                 padding: "11px 14px",
                 fontSize: 14, lineHeight: 1.7, color: C.text, whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
               }}>
                 {m.role === "assistant" ? renderTextWithHighlights(m.content) : m.content}
               </div>
@@ -656,7 +657,7 @@ Kullanıcının izlediği filmler/diziler: ${watched}
         {/* Loading dots */}
         {loading && (
           <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-            <div style={{ width: 30, height: 30, borderRadius: "50%", background: `linear-gradient(135deg,${C.accent},${C.red})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🎬</div>
+            <div style={{ width: 30, height: 30, borderRadius: "50%", background: `linear-gradient(135deg,${C.accent},${C.red})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, marginRight: 8 }}>🎬</div>
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: "4px 16px 16px 16px", padding: "14px 18px", display: "flex", gap: 5, alignItems: "center" }}>
               {[0, 1, 2].map(i => (
                 <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: C.accent, animation: `pulse 1.2s ${i * 0.2}s infinite` }} />
@@ -677,8 +678,8 @@ Kullanıcının izlediği filmler/diziler: ${watched}
                 key={s}
                 onClick={() => send(s)}
                 style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 20, padding: "7px 13px", fontSize: 12, color: C.muted, cursor: "pointer", transition: "all 0.2s" }}
-                onMouseEnter={e => { e.target.style.borderColor = C.accent; e.target.style.color = C.accent; }}
-                onMouseLeave={e => { e.target.style.borderColor = C.border; e.target.style.color = C.muted; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = C.accent; e.currentTarget.style.color = C.accent; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted; }}
               >
                 {s}
               </button>
@@ -695,8 +696,8 @@ Kullanıcının izlediği filmler/diziler: ${watched}
           onKeyDown={e => e.key === "Enter" && !e.shiftKey && send()}
           placeholder="Sinema dünyasında ne arıyorsun?…"
           style={{ flex: 1, background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 14px", color: C.text, fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
-          onFocus={e => e.target.style.borderColor = C.accent}
-          onBlur={e => e.target.style.borderColor = C.border}
+          onFocus={e => e.currentTarget.style.borderColor = C.accent}
+          onBlur={e => e.currentTarget.style.borderColor = C.border}
         />
         <button
           onClick={() => send()}
@@ -706,8 +707,9 @@ Kullanıcının izlediği filmler/diziler: ${watched}
             background: input.trim() ? C.accent : C.card,
             border: `1px solid ${input.trim() ? C.accent : C.border}`,
             color: input.trim() ? "#0a0806" : C.muted,
-            fontSize: 18, cursor: input.trim() ? "pointer" : "default",
+            fontSize: 18, cursor: input.trim() && !loading ? "pointer" : "default",
             display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s",
+            opacity: loading ? 0.6 : 1,
           }}
         >↑</button>
       </div>
@@ -730,7 +732,7 @@ function SearchScreen({ onCard, watchedIds }) {
       try {
         const d = await tmdb("/search/multi", { query: q, include_adult: false });
         setResults((d.results || []).filter(r => ["movie", "tv"].includes(r.media_type) && r.poster_path).slice(0, 21));
-      } catch (err) { console.error(err); }
+      } catch (err) { console.error(err); setResults([]); }
       setLoading(false);
     }, 420);
   }, [q]);
@@ -742,9 +744,9 @@ function SearchScreen({ onCard, watchedIds }) {
         <input
           autoFocus value={q} onChange={e => setQ(e.target.value)}
           placeholder="Film, dizi, oyuncu ara…"
-          style={{ width: "100%", background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "13px 14px 13px 42px", color: C.text, fontSize: 15, outline: "none" }}
-          onFocus={e => e.target.style.borderColor = C.accent}
-          onBlur={e => e.target.style.borderColor = C.border}
+          style={{ width: "100%", background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "13px 14px 13px 42px", color: C.text, fontSize: 15, outline: "none", transition: "border-color 0.2s" }}
+          onFocus={e => e.currentTarget.style.borderColor = C.accent}
+          onBlur={e => e.currentTarget.style.borderColor = C.border}
         />
       </div>
       {loading && <div style={{ color: C.muted, textAlign: "center", padding: 20 }}>Aranıyor…</div>}
@@ -771,7 +773,7 @@ function LibraryScreen({ history, watchlist, onCard }) {
     <div style={{ padding: "0 16px 80px" }}>
       <div style={{ display: "flex", marginBottom: 20, background: C.card, borderRadius: 12, padding: 4 }}>
         {[["watched", "İzlenenler"], ["watchlist", "İzleme Listesi"]].map(([k, l]) => (
-          <button key={k} onClick={() => setTab(k)} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "none", background: tab === k ? C.accent : "transparent", color: tab === k ? "#0a0806" : C.muted, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}>
+          <button key={k} onClick={() => setTab(k)} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "none", background: tab === k ? C.accent : "transparent", color: tab === k ? "#0a0806" : C.muted, fontWeight: tab === k ? 600 : 400, cursor: "pointer", transition: "all 0.2s" }}>
             {l} {tab === k ? `(${items.length})` : ""}
           </button>
         ))}
@@ -794,7 +796,7 @@ function LibraryScreen({ history, watchlist, onCard }) {
   );
 }
 
-// ── HomeScreen ────────────────────────────────────────────────────────────
+// ── HomeScreen ─────────────────────────────────────────────────────────
 function HomeScreen({ onCard, watchedIds }) {
   const [data, setData] = useState({ trending: [], topRated: [], newMovies: [], newTV: [], scifi: [], thriller: [] });
   const [loading, setLoading] = useState(true);
@@ -858,7 +860,7 @@ function HomeScreen({ onCard, watchedIds }) {
   );
 }
 
-// ── BottomNav ─────────────────────────────────────────────────────────────
+// ── BottomNav ──────────────────────────────────────────────────────────
 function BottomNav({ tab, setTab, onChat }) {
   const tabs = [
     { id: "home", icon: "🏠", label: "Ana Sayfa" },
@@ -868,14 +870,14 @@ function BottomNav({ tab, setTab, onChat }) {
   return (
     <div className="glass" style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, display: "flex", alignItems: "center", padding: "10px 16px calc(10px + env(safe-area-inset-bottom))", borderTop: `1px solid ${C.border}` }}>
       {tabs.map(t => (
-        <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, color: tab === t.id ? C.accent : C.muted, transition: "color 0.2s", fontSize: 11, fontWeight: 600, padding: "4px 0" }}>
+        <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "6px 0", color: tab === t.id ? C.accent : C.muted, transition: "color 0.2s", fontSize: 12, fontWeight: tab === t.id ? 600 : 400 }}>
           <span style={{ fontSize: 20 }}>{t.icon}</span>
           {t.label}
         </button>
       ))}
       <button
         onClick={onChat}
-        style={{ width: 46, height: 46, borderRadius: "50%", background: `linear-gradient(135deg,${C.accent},${C.red})`, border: "none", color: "#0a0806", fontSize: 20, cursor: "pointer", boxShadow: `0 4px 20px ${C.accent}55`, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "transform 0.2s" }}
+        style={{ width: 46, height: 46, borderRadius: "50%", background: `linear-gradient(135deg,${C.accent},${C.red})`, border: "none", color: "#0a0806", fontSize: 20, cursor: "pointer", boxShadow: "0 4px 12px rgba(232,184,109,0.3)", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center" }}
         onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
         onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
       >🤖</button>
@@ -883,7 +885,7 @@ function BottomNav({ tab, setTab, onChat }) {
   );
 }
 
-// ── App ───────────────────────────────────────────────────────────────────
+// ── App ────────────────────────────────────────────────────────────
 export default function App() {
   const [tab, setTab] = useState("home");
   const [modal, setModal] = useState(null);
@@ -891,8 +893,8 @@ export default function App() {
   const [history, setHistory] = useState(() => LS.get("cineai_watched", []));
   const [watchlist, setWatchlist] = useState(() => LS.get("cineai_watchlist", []));
 
-  const watchedIds = new Set(history.map(h => h.id));
-  const watchlistIds = new Set(watchlist.map(w => w.id));
+  const watchedIds = useMemo(() => new Set(history.map(h => h.id)), [history]);
+  const watchlistIds = useMemo(() => new Set(watchlist.map(w => w.id)), [watchlist]);
 
   const markWatched = useCallback((item) => {
     setHistory(h => {
@@ -900,7 +902,7 @@ export default function App() {
       LS.set("cineai_watched", next);
       return next;
     });
-  }, [history]);
+  }, [watchedIds]);
 
   const toggleWatchlist = useCallback((item) => {
     setWatchlist(w => {
@@ -908,12 +910,11 @@ export default function App() {
       LS.set("cineai_watchlist", next);
       return next;
     });
-  }, [watchlist]);
+  }, [watchlistIds]);
 
-  // Chat'ten bir film kartına tıklanınca detay modalı aç
   const handleOpenDetail = useCallback((item) => {
-    setShowChat(false); // chat'i kapat
-    setTimeout(() => setModal(item), 100); // sonra modali aç
+    setShowChat(false);
+    setTimeout(() => setModal(item), 100);
   }, []);
 
   return (
