@@ -1,4 +1,3 @@
-```react
 import { useState, useEffect, useRef, useCallback } from "react";
 
 // ── Palette & design tokens ────────────────────────────────────────────────
@@ -17,10 +16,10 @@ const C = {
 };
 
 // ── API Anahtarları ───────────────────────────────────────────────────────
-// TMDB anahtarın (Görseller ve aramalar için)
+// TMDB anahtarı (Görseller ve aramalar için)
 const TMDB_KEY = "4b133907256021b477d7644ac223471a"; 
 
-// Google (Gemini) API Anahtarın (AI Sohbet için)
+// Google (Gemini) API Anahtarı (AI Sohbet için)
 const GEMINI_API_KEY = "AQ.Ab8RN6Lw-vtwgKMosBZ0rGqTs-f-iieuk4lxNb0WS_nqdYNriw"; 
 
 // ── Fonts (Google Fonts injected once) ────────────────────────────────────
@@ -217,8 +216,8 @@ function DetailModal({ item, onClose, onWatch, onWatchlist, watched, inWatchlist
     const type = isTV ? "tv" : "movie";
     Promise.all([
       tmdb(`/${type}/${item.id}`, {append_to_response:"credits,videos,similar"}),
-    ]).then(([d]) => setDetails(d));
-  }, [item.id]);
+    ]).then(([d]) => setDetails(d)).catch(err => console.error("DetailModal error:", err));
+  }, [item.id, isTV]);
 
   const backdropUrl = item.backdrop_path ? IMG(item.backdrop_path,"original") : null;
   const posterUrl   = IMG(item.poster_path);
@@ -260,7 +259,9 @@ function DetailModal({ item, onClose, onWatch, onWatchlist, watched, inWatchlist
           <div style={{position:"absolute",inset:0,background:"linear-gradient(to top, rgba(14,14,26,1) 0%, rgba(14,14,26,0.2) 50%, transparent 100%)"}} />
           <button
             onClick={onClose}
-            style={{position:"absolute",top:14,right:14,background:"rgba(0,0,0,0.5)",border:"none",color:C.text,width:32,height:32,borderRadius:"50%",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}
+            style={{position:"absolute",top:14,right:14,background:"rgba(0,0,0,0.5)",border:"none",color:C.text,width:32,height:32,borderRadius:"50%",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",transition:"background 0.2s"}}
+            onMouseEnter={e=>e.target.style.background="rgba(0,0,0,0.8)"}
+            onMouseLeave={e=>e.target.style.background="rgba(0,0,0,0.5)"}
           >✕</button>
           <div style={{position:"absolute",bottom:16,left:16,right:16,display:"flex",gap:14,alignItems:"flex-end"}}>
             {posterUrl && <img src={posterUrl} alt="" style={{width:72,height:108,objectFit:"cover",borderRadius:8,boxShadow:"0 8px 24px rgba(0,0,0,0.6)",flexShrink:0}} />}
@@ -286,7 +287,9 @@ function DetailModal({ item, onClose, onWatch, onWatchlist, watched, inWatchlist
           </button>
           {trailer && (
             <a href={`https://youtube.com/watch?v=${trailer.key}`} target="_blank" rel="noreferrer"
-              style={{padding:"10px 14px",background:C.card,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,textDecoration:"none",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:5}}
+              style={{padding:"10px 14px",background:C.card,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,textDecoration:"none",whiteSpace:"nowrap",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.2s"}}
+              onMouseEnter={e=>{e.target.style.borderColor=C.accent;e.target.style.color=C.accent;}}
+              onMouseLeave={e=>{e.target.style.borderColor=C.border;e.target.style.color=C.text;}}
             >▶ Fragman</a>
           )}
         </div>
@@ -377,7 +380,7 @@ function AIChatPanel({ history, watchedIds, watchlistIds, onClose }) {
     setMsgs(m=>[...m, {role:"user", content:userMsg}]);
     setLoading(true);
 
-    const systemPrompt = `Sen CineAI'sın, elit ve tutkulu bir sinema uzmanısın. Kullanıcıya filmler ve diziler hakkında kısa, öz, şık ve Türkçe öneriler yapıyorsun. Sadece metin gönder, markdown başlık kullanma ama film isimlerini kalın (**) yap. Kullanıcının izledikleri: ${watched}. Listesinde ${watchlistIds.size} film var.`;
+    const systemPrompt = `Sen CineAI'sın, elit ve tutkulu bir sinema uzmanısın. Kullanıcıya filmler ve diziler hakkında kısa, öz, şık ve Türkçe öneriler yapıyorsun. Sadece metin gönder, emoji ve stil kullan. İzlenen filmler: ${watched}. Yanıtları kısa ve etkili tut.`;
     
     const conversation = msgs.map(m => `${m.role === 'user' ? 'Kullanıcı' : 'CineAI'}: ${m.content}`).join('\n') + `\nKullanıcı: ${userMsg}\nCineAI:`;
 
@@ -393,7 +396,8 @@ function AIChatPanel({ history, watchedIds, watchlistIds, onClose }) {
       const data = await res.json();
       const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Üzgünüm, şu an bağlantı kuramıyorum. Lütfen tekrar dene.";
       setMsgs(m=>[...m, {role:"assistant", content:reply}]);
-    } catch {
+    } catch (err) {
+      console.error("Chat error:", err);
       setMsgs(m=>[...m, {role:"assistant", content:"Bağlantı hatası — Lütfen API anahtarınızı kontrol edip tekrar deneyin."}]);
     }
     setLoading(false);
@@ -428,7 +432,7 @@ function AIChatPanel({ history, watchedIds, watchlistIds, onClose }) {
             animation:"fadeUp 0.3s both",
           }}>
             {m.role==="assistant" && (
-              <div style={{width:28,height:28,borderRadius:"50%",background:`linear-gradient(135deg,${C.accent},${C.red})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0,marginRight:8,marginTop:2}}>🎬</div>
+              <div style={{width:28,height:28,borderRadius:"50%",background:`linear-gradient(135deg,${C.accent},${C.red})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>🎬</div>
             )}
             <div style={{
               maxWidth:"80%",
@@ -438,6 +442,7 @@ function AIChatPanel({ history, watchedIds, watchlistIds, onClose }) {
               padding:"10px 14px",
               fontSize:14,lineHeight:1.65,color:C.text,
               whiteSpace:"pre-wrap",
+              marginLeft: m.role==="assistant" ? "8px" : "0",
             }}>{m.content}</div>
           </div>
         ))}
@@ -514,8 +519,12 @@ function SearchScreen({ onCard, watchedIds }) {
     if (!q.trim()) { setResults([]); return; }
     timer.current = setTimeout(async()=>{
       setLoading(true);
-      const d = await tmdb("/search/multi", {query:q, include_adult:false});
-      setResults((d.results||[]).filter(r=>["movie","tv"].includes(r.media_type)&&r.poster_path).slice(0,20));
+      try {
+        const d = await tmdb("/search/multi", {query:q, include_adult:false});
+        setResults((d.results||[]).filter(r=>["movie","tv"].includes(r.media_type)&&r.poster_path).slice(0,20));
+      } catch (err) {
+        console.error("Search error:", err);
+      }
       setLoading(false);
     }, 400);
   }, [q]);
@@ -592,7 +601,7 @@ function LibraryScreen({ history, watchlist, onCard }) {
   );
 }
 
-// ── Home screen ────────────────────────────────────────────────────────────
+// ── Home screen ───────────────────────────────────────────────────────────
 function HomeScreen({ onCard, watchedIds, watchlistIds }) {
   const [trending, setTrending] = useState([]);
   const [topRated, setTopRated] = useState([]);
@@ -618,7 +627,7 @@ function HomeScreen({ onCard, watchedIds, watchlistIds }) {
       setScifi(sf.results||[]);
       if(tr_[0]) setHero(tr_[0]);
       setLoading(false);
-    });
+    }).catch(err => console.error("HomeScreen error:", err));
   },[]);
 
   const heroImg = hero?.backdrop_path ? IMG(hero.backdrop_path,"original") : null;
@@ -656,7 +665,7 @@ function HomeScreen({ onCard, watchedIds, watchlistIds }) {
   );
 }
 
-// ── Bottom Nav ─────────────────────────────────────────────────────────────
+// ── Bottom Nav ───────────────────────────────────────────────────────────
 function BottomNav({ tab, setTab, onChat }) {
   const tabs = [
     { id:"home",    icon:"🏠", label:"Ana Sayfa" },
@@ -701,7 +710,7 @@ function BottomNav({ tab, setTab, onChat }) {
   );
 }
 
-// ── Main App ───────────────────────────────────────────────────────────────
+// ── Main App ────────────────────────────────────────────────────────────
 export default function CineAI() {
   const [tab, setTab]           = useState("home");
   const [modal, setModal]       = useState(null);
@@ -783,6 +792,3 @@ export default function CineAI() {
     </>
   );
 }
-
-
-```
