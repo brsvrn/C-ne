@@ -492,7 +492,7 @@ function AIChatPanel({ history, onClose, onOpenDetail }) {
   const [msgs, setMsgs] = useState([
     {
       role: "assistant",
-      content: "Merhaba! Ben CineAI 🎬\n\nSana özel film ve dizi önerileri yapabilirim — izleme geçmişine bakarak, ruh haline göre veya sevdiğin türlere göre. Önerdiğim filmlerin afişlerine tıkla, detaylarını gör ve izleme listene ekle!",
+      content: "Merhaba! Ben CineAI 🎬\n\nFilm ve dizi önerileri, gizli cevherleri keşfetme veya sadece sinema sohbeti için burdayım. Ne izlemek istersin?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -522,33 +522,16 @@ function AIChatPanel({ history, onClose, onOpenDetail }) {
     setMsgs(m => [...m, { role: "user", content: userMsg }]);
     setLoading(true);
 
-    const systemPrompt = `Sen CineAI'sın — derin sinema kültürüne, geniş film bilgisine ve tutkulu bir eleştirmen bakış açısına sahip kişisel film asistanısın.
+    const systemPrompt = `Sen CineAI'sın — kişisel film ve dizi asistanısın.
+Kullanıcının izledikleri: ${watched}
 
-Kullanıcının izlediği filmler/diziler: ${watched}
+ÇOK KATI KURAL:
+Önerdiğin HER film veya dizi adını SADECE VE KESİNLİKLE iki köşeli parantez içinde yaz. 
+DOĞRU: "Size [[Fleabag]] dizisini öneririm."
+YANLIŞ: "Size **Fleabag** dizisini öneririm."
+YANLIŞ: "Size 'Fleabag' dizisini öneririm."
 
-## TEMEL KURALLAR
-
-1. **Film/dizi önerirken MUTLAKA [[Film Adı]] formatını kullan.** Örnek: "[[Interstellar]] gerçekten etkileyici bir deneyim."
-   - Her bahsettiğin film/dizi için bu formatı kullan
-   - Bu sayede kullanıcı filmlerin afişlerini ve detaylarını görebilir
-
-2. **Detaylı ve derinlikli cevaplar ver:**
-   - Sadece liste verme, her film için kısa ama etkileyici bir açıklama yap
-   - Neden önerdiğini, hangi duygusal ya da sinematik özelliğinin öne çıktığını anlat
-   - Yönetmen, oyuncu, atmosfer, senaryo hakkında içgörülü yorumlar ekle
-   - İzleme geçmişiyle bağlantı kur: "X'i beğendiysen, Y'yi de seveceksin çünkü..."
-
-3. **Yapılandırılmış ama akıcı yaz:**
-   - 3-5 öneri için her biri 2-3 cümleyle açıkla
-   - "İşte 5 öneri:" gibi kuru listeler yerine doğal bir anlatım kullan
-   - Paragrafları kısa tut, ama içeriği zengin bırak
-
-4. **Kişiselleştir:**
-   - İzleme geçmişine sık sık değin
-   - Kullanıcının zevkini tahmin et
-   - Farklı kategorilerden öner (bir klasik, bir yeni, bir gizli cevher gibi)
-
-5. **Asla yarım bırakma** — Cevabın doğal bir şekilde tamamlanmalı.`;
+Detaylı, içgörülü ama okuması keyifli kısa paragraflar kullan. Asla yarım cümle bırakma.`;
 
     const geminiMsgs = msgs
       .filter((_, i) => i > 0)
@@ -574,36 +557,52 @@ Kullanıcının izlediği filmler/diziler: ${watched}
       const reader = res.body.getReader();
       const decoder = new TextDecoder("utf-8");
       let fullText = "";
+      
+      // Yarım gelen paketleri bekleteceğimiz tampon
+      let buffer = ""; 
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n").filter(line => line.trim().startsWith("data: "));
+        // Yeni gelen veriyi tampona ekle
+        buffer += decoder.decode(value, { stream: true });
+        
+        // Veriyi satır sonlarına göre böl
+        const lines = buffer.split("\n");
+        
+        // Son satır henüz tamamlanmamış (yarım paket) olabilir. 
+        // Onu işleme sokmayıp buffer'da bırakıyoruz ki bir sonraki pakette birleşsin.
+        buffer = lines.pop(); 
 
         for (const line of lines) {
-          const dataStr = line.replace("data: ", "").trim();
+          const trimmedLine = line.trim();
+          if (!trimmedLine.startsWith("data: ")) continue;
+          
+          const dataStr = trimmedLine.replace("data: ", "").trim();
           if (dataStr === "[DONE]") continue;
 
           try {
             const parsed = JSON.parse(dataStr);
             const textPart = parsed.candidates?.[0]?.content?.parts?.[0]?.text || "";
-            fullText += textPart;
+            
+            if (textPart) {
+              fullText += textPart;
 
-            setMsgs(m => {
-              const newMsgs = [...m];
-              const lastMsg = newMsgs[newMsgs.length - 1];
-              lastMsg.content = fullText;
-              
-              const extracted = extractMovieTitles(fullText);
-              if (extracted.length > 0) {
-                 lastMsg.movieTitles = extracted;
-              }
-              return newMsgs;
-            });
+              setMsgs(m => {
+                const newMsgs = [...m];
+                const lastMsg = newMsgs[newMsgs.length - 1];
+                lastMsg.content = fullText;
+                
+                const extracted = extractMovieTitles(fullText);
+                if (extracted.length > 0) {
+                   lastMsg.movieTitles = extracted;
+                }
+                return newMsgs;
+              });
+            }
           } catch (e) {
-            // Sessizce geç
+             // Tampon sistemi sayesinde bu hata bloğuna artık neredeyse hiç düşmeyecek
           }
         }
       }
