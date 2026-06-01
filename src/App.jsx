@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { C } from "./utils/theme";
-import { LS } from "./utils/storage";
+import { C } from "./utils/theme.js";
+import { LS } from "./utils/storage.js";
 
 // Bileşenlerimiz
 import HomeScreen from "./components/HomeScreen";
